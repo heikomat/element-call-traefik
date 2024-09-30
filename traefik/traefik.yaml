@@ -1,0 +1,38 @@
+providers:
+  docker:
+    exposedByDefault: false
+    endpoint: "unix:///var/run/docker.sock"
+    watch: true
+    network: traefik # required to find the correct routable ip of containers that are in multiple networks
+  file:
+    directory: /etc/traefik/dynamic-conf.d
+    watch: true
+
+serversTransport:
+  insecureSkipVerify: true # accept ssl certificates from services that use their own.
+
+entryPoints:
+  web:
+    address: :80
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  websecure:
+    address: :443
+    transport:
+      respondingTimeouts:
+        readTimeout: 0 # allow large uploads
+    http:
+      tls:
+        certResolver: letsencrypt
+    http3: {}
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: <your-email>
+      storage: letsencrypt-acme.json
+      tlsChallenge: {}

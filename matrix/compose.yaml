@@ -1,0 +1,68 @@
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    restart: always
+    volumes:
+      - ./synapse:/data
+    networks:
+      - default
+      - traefik
+    depends_on:
+      - synapse-postgres
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.matrix.rule=Host(`matrix.<your-domain>`)
+      - traefik.http.services.matrix.loadbalancer.server.port=8008
+
+  synapse-postgres:
+    image: postgres:13
+    restart: always
+    volumes:
+      - ./synapse-postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: <synapse-postgres-password>
+      POSTGRES_INITDB_ARGS: "--lc-collate=C --lc-ctype=C --encoding=UTF8"
+
+  sliding-proxy:
+    image: ghcr.io/matrix-org/sliding-sync:latest
+    restart: unless-stopped
+    environment:
+      - "SYNCV3_SECRET=<sliding-sync-secret>"
+      - "SYNCV3_SERVER=http://synapse:8008"
+      - "SYNCV3_DB=user=syncv3 dbname=syncv3 sslmode=disable host=sliding-postgres password=<sliding-postgres-password>"
+      - "SYNCV3_BINDADDR=0.0.0.0:8881"
+    depends_on:
+      - sliding-postgres
+      - synapse
+    networks:
+      - traefik
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.syncv3.rule=Host(`syncv3.<your-domain>`)
+      - traefik.http.services.syncv3.loadbalancer.server.port=8881
+  sliding-postgres:
+    image: docker.io/postgres:15
+    restart: unless-stopped
+    environment:
+      - "POSTGRES_USER=syncv3"
+      - "POSTGRES_PASSWORD=<sliding-postgres-password>"
+      - "POSTGRES_DB=syncv3"
+    volumes:
+      - /sliding-proxy-postgres:/var/lib/postgresql/data
+
+  well-known-nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.matrix-well-known.rule=Host(`matrix.<your-domain>`) && PathPrefix(`/.well-known`)"
+      - "traefik.http.routers.syncv3-well-known.rule=Host(`syncv3.<your-domain>`) && PathPrefix(`/.well-known`)"
+
+networks:
+  traefik:
+    external: true

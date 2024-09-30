@@ -1,0 +1,21 @@
+services:
+  reverse-proxy:
+    image: traefik:v3.1
+    container_name: traefik
+    ports:
+      - 80:80
+      - 443:443/tcp
+      - 443:443/udp
+    restart: always
+    volumes:
+      # configuration
+      - ./traefik.yaml:/etc/traefik/traefik.yaml
+      - ./dynamic-conf.d:/etc/traefik/dynamic-conf.d
+      # storage for certificates
+      - ./letsencrypt-acme.json:/letsencrypt-acme.json
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  default:
+    name: traefik

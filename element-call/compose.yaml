@@ -1,0 +1,76 @@
+services:
+  element-call:
+    build:
+      context: ./element-call
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.element-call.rule=Host(`element-call.<your-domain>`)
+    restart: always
+
+  livekit-jwt-service:
+    image: ghcr.io/element-hq/lk-jwt-service:latest-ci
+    environment:
+      - LK_JWT_PORT=8881
+      - LIVEKIT_URL=wss://livekit.<your-domain>:443
+      - LIVEKIT_KEY=<livekit-key>
+      - LIVEKIT_SECRET=<livekit-secret>
+      - LIVEKIT_INSECURE_SKIP_VERIFY_TLS=NO
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.livekit-jwt.rule=Host(`livekit.<your-domain>`) && PathPrefix(`/sfu/get`) || Host(`livekit.<your-domain>`) && PathPrefix(`/healthz`)
+      - traefik.http.services.livekit-jwt.loadbalancer.server.port=8881
+    deploy:
+      restart_policy:
+        condition: on-failure
+    networks:
+      - traefik
+      - livekitbackend
+
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+    networks:
+      - traefik
+      - livekitbackend
+    depends_on:
+      - livekit-redis
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+    ports:
+      - 3478:3478/udp # STUN/TURN
+      - 7882:7882/udp # WebRTC
+      - 7881:7881/tcp # WebRTC-fallback
+      - 50000-50255:50000-50255/udp # TURN relay range
+    labels:
+      - "traefik.enable=true"
+      # Routing for livekit.<your-domain>
+      - "traefik.http.routers.livekit.rule=Host(`livekit.<your-domain>`)"
+      - "traefik.http.routers.livekit.entrypoints=websecure"
+      - "traefik.http.routers.livekit.tls=true"
+      - "traefik.http.services.livekit.loadbalancer.server.port=7880"
+      - "traefik.http.routers.livekit.tls.certresolver=letsencrypt"
+
+      # Routing for livekit-turn.<your-domain>
+      - "traefik.tcp.routers.livekit-turn.rule=HostSNI(`livekit-turn.<your-domain>`)"
+      - "traefik.tcp.routers.livekit-turn.entrypoints=websecure"
+      - "traefik.tcp.routers.livekit-turn.tls=true"
+      - "traefik.tcp.services.livekit-turn.loadbalancer.server.port=5349"
+      - "traefik.tcp.routers.livekit-turn.tls.certresolver=letsencrypt"
+
+  livekit-redis:
+    image: redis:7-alpine
+    command: redis-server /etc/redis.conf
+    restart: unless-stopped
+    networks:
+      - livekitbackend
+    volumes:
+      - ./livekit-redis.conf:/etc/redis.conf
+
+networks:
+  livekitbackend:
+  traefik:
+    external: true

@@ -1,0 +1,27 @@
+server_name: "matrix.<your-domain>"
+
+# There is a lot of other synapse config here that is probably not relevant
+# to the element-call setup. The database-part is just because it matches
+# the synapse-postgres service in the compose file.
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: <synapse-postgres-password>
+    database: synapse
+    host: synapse-postgres
+    cp_min: 5
+    cp_max: 10
+
+experimental_features:
+    msc3266_enabled: true

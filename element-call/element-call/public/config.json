@@ -1,0 +1,15 @@
+{
+  "default_server_config": {
+    "m.homeserver": {
+      "base_url": "https://matrix.<your-domain>",
+      "server_name": "matrix.<your-domain>"
+    }
+  },
+  "livekit": {
+    "livekit_service_url": "https://livekit.<your-domain>"
+  },
+  "features": {
+    "feature_use_device_session_member_events": true
+  },
+  "eula": "https://static.element.io/legal/online-EULA.pdf"
+}
