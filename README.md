@@ -110,8 +110,10 @@ If you self-host the element-web app (see the element-web/compose.yaml for an ex
 - video-rooms + element-call-video-rooms (special rooms where the main focus is a perpetuate video call, but that also includes a text-chat)
 - group-calls (make sure you have permissions to make element-call calls in your groups)
 
-> TODO: Check if these things can somehow also be configures via well-known
-
 # Element Desktop app
 
-> TODO: Check how to make the desktop app use the self-hosted element-call instance
+The desktop app just wraps element-web. for now, it seems to be impossible to
+configure the well-known in a way that tells element-desktop what element-call url to use.
+It could be that in the future, this can be configured via `/.well-known/element/element.json` just like it can be for the Element X app.
+
+For more Info, see https://github.com/element-hq/element-meta/issues/2441 and https://github.com/element-hq/element-meta/issues/2441
