@@ -56,19 +56,7 @@ You should now be able to `docker compose up -d element-call` and visit `element
 
 You should now be able to `docker compose up -d` These services. It will not be used by element-call yet, because we have to tell element-call where to find the livekit backend. This is done later via the file served at `https://matrix.<your-domain>/.well-known/matrix/client`
 
-# 3. Configure Matrix/synapse (optional)
-
-As per the [element-call docs](https://github.com/element-hq/element-call?tab=readme-ov-file#configuration), you can add this to your synapses `homeserver.yaml`:
-```
-experimental_features:
-    msc3266_enabled: true
-```
-MSC3266 is the Room Summary API ([Proposal](https://github.com/deepbluev7/matrix-doc/blob/room-summaries/proposals/3266-room-summary.md)).
-This option is supposed to only be required for "guest access / knocking" (https://github.com/element-hq/element-call/pull/2343#issuecomment-2085260557). One user had problems with invite-links not working without this setting (https://github.com/element-hq/element-call/issues/2340).
-
-As i only video-call with users on my homeserver, i've had no issues so far that were caused by this feature not being enabled.
-
-# 4. Setup well-known files for Matrix/synapse
+# 3. Setup well-known files for Matrix/synapse
 
 Services that belong to the Element ecosystem want to know where they can find each other. To do so, they usually ask the `./well-known/matrix/client`-config of the homeserver.
 In order to easily adjust what is served here i decided to create it myself, instead of relying on synapse to create it for me.
@@ -89,6 +77,19 @@ If you look inside the `nginx.conf` you'll see that it serves 3 "well-know" file
 - Go to https://element-call.<your-domain>
 - Login with a user on your homeserver
 - Try starting a call
+
+
+# 4. Configure Matrix/synapse (optional)
+
+As per the [element-call docs](https://github.com/element-hq/element-call?tab=readme-ov-file#configuration), you can add this to your synapses `homeserver.yaml`:
+```
+experimental_features:
+    msc3266_enabled: true
+```
+MSC3266 is the Room Summary API ([Proposal](https://github.com/deepbluev7/matrix-doc/blob/room-summaries/proposals/3266-room-summary.md)).
+This option is supposed to only be required for "guest access / knocking" (https://github.com/element-hq/element-call/pull/2343#issuecomment-2085260557). One user had problems with invite-links not working without this setting (https://github.com/element-hq/element-call/issues/2340).
+
+As i only video-call with users on my homeserver, i've had no issues so far that were caused by this feature not being enabled.
 
 # App-Support
 ## Videocall-button in Element X
