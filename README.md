@@ -56,15 +56,17 @@ You should now be able to `docker compose up -d element-call` and visit `element
 
 You should now be able to `docker compose up -d` These services. It will not be used by element-call yet, because we have to tell element-call where to find the livekit backend. This is done later via the file served at `https://matrix.<your-domain>/.well-known/matrix/client`
 
-# 3. Configure Matrix/synapse (maybe optional?)
+# 3. Configure Matrix/synapse (optional)
 
-As per the [element-call docs](https://github.com/element-hq/element-call?tab=readme-ov-file#configuration), you should add this to your synapses `homeserver.yaml`:
+As per the [element-call docs](https://github.com/element-hq/element-call?tab=readme-ov-file#configuration), you can add this to your synapses `homeserver.yaml`:
 ```
 experimental_features:
     msc3266_enabled: true
 ```
-They say without it, element-call won't work. MSC3266 seems to be the Room Summary API ([Proposal](https://github.com/deepbluev7/matrix-doc/blob/room-summaries/proposals/3266-room-summary.md)).
-As someone who will probably use the element-webapp or Elemenet X app, i'm not sure yet if turning this on is actually really necessary. I Will have to read the proposal and maybe test what breaks when this is not enabled.
+MSC3266 is the Room Summary API ([Proposal](https://github.com/deepbluev7/matrix-doc/blob/room-summaries/proposals/3266-room-summary.md)).
+This option is supposed to only be required for "guest access / knocking" (https://github.com/element-hq/element-call/pull/2343#issuecomment-2085260557). One user had problems with invite-links not working without this setting (https://github.com/element-hq/element-call/issues/2340).
+
+As i only video-call with users on my homeserver, i've had no issues so far that were caused by this feature not being enabled.
 
 # 4. Setup well-known files for Matrix/synapse
 
