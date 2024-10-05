@@ -34,6 +34,7 @@ You should now be able to `docker compose up -d element-call` and visit `element
 1. Add the `livekit`, `livekit-redis` and `livekit-jwt-service` to the `compose.yaml` as shown in this repo
    - Replace `<your-domain>` in the environments and labels of these services
    - In an ideal world you wouldn't need the [livekit-jwt-service](https://github.com/element-hq/lk-jwt-service). It only provides two routes, and traefik is configured to route only these two to the jwt-service.
+   - the jwt-service is using the same subdomain as the livekit backend to prevent cors issues
 1. Create a temporary folder somewhere in which you run the livekit/generate container as described [in their docs](https://docs.livekit.io/home/self-hosting/vm/). This will get you a `livekit.yaml` with a key and a secret.
 1. Replace `<livekit-key>` and `<livekit-secret>` with the values from the generated `livekit.yaml`
 1. Remove the temporary folder. It is no longer needed.
@@ -55,7 +56,7 @@ You should now be able to `docker compose up -d element-call` and visit `element
 
 You should now be able to `docker compose up -d` These services. It will not be used by element-call yet, because we have to tell element-call where to find the livekit backend. This is done later via the file served at `https://matrix.<your-domain>/.well-known/matrix/client`
 
-# Configure Matrix/synapse (maybe optional?)
+# 3. Configure Matrix/synapse (maybe optional?)
 
 As per the [element-call docs](https://github.com/element-hq/element-call?tab=readme-ov-file#configuration), you should add this to your synapses `homeserver.yaml`:
 ```
@@ -65,7 +66,7 @@ experimental_features:
 They say without it, element-call won't work. MSC3266 seems to be the Room Summary API ([Proposal](https://github.com/deepbluev7/matrix-doc/blob/room-summaries/proposals/3266-room-summary.md)).
 As someone who will probably use the element-webapp or Elemenet X app, i'm not sure yet if turning this on is actually really necessary. I Will have to read the proposal and maybe test what breaks when this is not enabled.
 
-# Setup well-known files for Matrix/synapse
+# 4. Setup well-known files for Matrix/synapse
 
 Services that belong to the Element ecosystem want to know where they can find each other. To do so, they usually ask the `./well-known/matrix/client`-config of the homeserver.
 In order to easily adjust what is served here i decided to create it myself, instead of relying on synapse to create it for me.
@@ -87,10 +88,10 @@ If you look inside the `nginx.conf` you'll see that it serves 3 "well-know" file
 - Login with a user on your homeserver
 - Try starting a call
 
-# Videocall-button in Element X (App)
+# App-Support: Videocall-button in Element X
 you matrix-domain has to serve the correctly configured `/.well-known/element/element.json` in order for the element x app uses your self-hosted element-call website when using the video-call button
 
-# Videocall-button and Video-Rooms in the Element Webapp
+# App-Support: Videocall-button and Video-Rooms in the Element Webapp
 If you self-host the element-web app (see the element-web/compose.yaml for an example), you can provide a json-config-file. In there you can specify this:
 ```json
 {
