@@ -1,0 +1,15 @@
+services:
+  element-web:
+    image: vectorim/element-web
+    restart: always
+    volumes:
+      - ./element-config.json:/app/config.json
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.element-web.rule=Host(`element.<your-domain>`)
+
+networks:
+  traefik:
+    external: true

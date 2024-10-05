@@ -1,21 +1,115 @@
 # element-call-traefik
 
-I'll have to update the readme, but the important parts are:
+This is my personal documentation on how i host and integrate element-call to conduct private video-chats.
+It assumes that you have traefik setup and running, but provides a working config as example.
 
-- run the livekit/generate container as described [in their docs](https://docs.livekit.io/home/self-hosting/vm/) to get a `livekit.yaml` with a key and a secret. Use them in the `livekit.yaml` and `element-call/compose.yaml`
-- go into the element-call folder and clone [element-call](https://github.com/element-hq/element-call) into it (`git clone https://github.com/element-hq/element-call.git`)
-- replace <your-domain> the element-call/public/config.json and move it to the corresponding folder in the cloned element-call repo
-- Replace the Dockerfile in the cloned element-call repo with the one from here, so that the webapp can be built
-- forward ports 3478 (udp, STUN), 7883 (udp, WebRTC), 7881 (tcp, WebRTC-Fallback), 50000-50255 (udp, TURN relay range), 80 (tcp+udp, http), 443 (tcp+udp, https+wss) to the machine running this all
+This setup looks somewhat like this:
+1. Traefik as proxy and for ssl-termination
+1. a matrix instance (synapse) on `matrix.<your-domain>`
+   - It provides authorization and manages your rooms/groups
+1. a matrix-sliding-proxy on `syncv3.<your-domain>` if you want to use the Element X app 
+1. the element-call webapp on `element-call.<your-domain>`
+1. a livekit instance on `livekit.<your-domain>`
+   - livekit does the heavy lifting and is basically the videocall-backend to the element-call webapp
 
-to start the element-call-webapp you first should build it with `docker compose build element-call`. After that, it can be `docker compose up -d`'d like the rest of the services in that compose file. This is because the webapp has no official docker image yet, so we build it. This is also th reason we have to adjust their `Dockerfile`.
-Updating the service is therefore done via `git pull` + rebuild - which is exactly what the `update-element-call.sh` does
+The whole setup here is split into multiple compose files. I hope this makes it easier to focus on one topic at a time. On my on server, everything is in one folder and a single compose file.
 
-if you already have synapse running you don't need most of what is in the `matrix` folder.
-The one interesting thing in there is the `well-known-nginx`-server. It is configured so that traffic to the well-known-urls for server and client are routed to that nginx, so we can easily change them. They are important so that the separate servers here find one another
-- the livekit-config in `/.well-known/matrix/client` is required for the element-call website to use your livekit-instance
-- the `/.well-known/element/element.json` is required so that the element x app uses your self-hosted element-call website
+# 0. Setup the subdomains
 
-Something similar is done with the `livekit-jwt-service` in the `element-call/compose.yaml`. Only the two routes [this service](https://github.com/element-hq/lk-jwt-service) actually provides are routed to it. The rest is routed to livekit, under the same domain (to prevent CORS issues)
+make sure the required subdomains (see above) point to your server
 
-If i remember and find the time, i'll update this to a more complete guide
+# 1. Setup the Element-Call Webapp
+
+1. Create a folder for the elment-call webapp to live in. In this repo this is the  `element-call` folder. If you are like me and have everything matrix related in a single folder, feel free to use that one.
+1. Go into that folder and create an `element-call-config.json`. It tells your element-call instance where to find your matrix homeserver. It could also tell element-call where to finde the livekit backend, but the prefered way to set this is the `.well-known/matrix/client`-file that we will setup later. See the example in this repo for what the element-call-config looks like (you have to replace `<your-domain>`)
+1. Create a compose.yaml (or use your existing one) and add the `element-call` service as is shown in this repo.
+
+You should now be able to `docker compose up -d element-call` and visit `element-call.<your-domain>`. You should already see the element-call login. If you already configured your matrix-server, you might be able to login, though calls won't work yet because livekit is not yet setup.
+
+# 2. Setup Livekit
+
+1. Go into the folder that contains the `compose.yaml` that contains the element-call service
+1. Copy over the `livekit.yaml` and `livekit-redis.conf` from this repo as a starting point.
+   - Replace `<your-domain>` in these files
+1. Add the `livekit`, `livekit-redis` and `livekit-jwt-service` to the `compose.yaml` as shown in this repo
+   - Replace `<your-domain>` in the environments and labels of these services
+   - In an ideal world you wouldn't need the [livekit-jwt-service](https://github.com/element-hq/lk-jwt-service). It only provides two routes, and traefik is configured to route only these two to the jwt-service.
+1. Create a temporary folder somewhere in which you run the livekit/generate container as described [in their docs](https://docs.livekit.io/home/self-hosting/vm/). This will get you a `livekit.yaml` with a key and a secret.
+1. Replace `<livekit-key>` and `<livekit-secret>` with the values from the generated `livekit.yaml`
+1. Remove the temporary folder. It is no longer needed.
+1. forward the following ports to your server if you have a firewall:
+   - 3478 (udp, STUN)
+     - skip this one if you don't want to have your STUN-traffic be unencrypted. STUN allowes clients to find each others public ip address. This is usally not considered sensitive data though.
+   - 7883 (udp, WebRTC)
+   - 7881 (tcp, WebRTC-Fallback)
+   - 50000-50255 (udp, TURN relay range)
+   - 80 (tcp+udp, http)
+   - 443 (tcp+udp, https+wss)
+
+> Here is why these Ports can be forwarded (mostly) without exposing unencrypted traffic:  
+> - Port 80 goes to traefik, which just redirects http-traffic to port 443 with encryption
+> - Port 443 also goes to traefik and is encrypted (HTTPS/wss)
+> - Port 3478 is the only one actually handling unencrypted traffic (see above)
+> - 7881 and 7883 Go to livekit. They handle WebRTC-Traffic, which is as part of its spec, must be encrypted. They therfore don't need the ssl-termination through traefik
+> - Ports 50000-50255 are used to funnel traffic between clients that can't directly connect to each other, but can connect to the server. If i understand it correctly, it should only ever contain WebRTC-Traffic in this scenario, which is always encrypted. (see https://stackoverflow.com/a/23300741)
+
+You should now be able to `docker compose up -d` These services. It will not be used by element-call yet, because we have to tell element-call where to find the livekit backend. This is done later via the file served at `https://matrix.<your-domain>/.well-known/matrix/client`
+
+# Configure Matrix/synapse (maybe optional?)
+
+As per the [element-call docs](https://github.com/element-hq/element-call?tab=readme-ov-file#configuration), you should add this to your synapses `homeserver.yaml`:
+```
+experimental_features:
+    msc3266_enabled: true
+```
+They say without it, element-call won't work. MSC3266 seems to be the Room Summary API ([Proposal](https://github.com/deepbluev7/matrix-doc/blob/room-summaries/proposals/3266-room-summary.md)).
+As someone who will probably use the element-webapp or Elemenet X app, i'm not sure yet if turning this on is actually really necessary. I Will have to read the proposal and maybe test what breaks when this is not enabled.
+
+# Setup well-known files for Matrix/synapse
+
+Services that belong to the Element ecosystem want to know where they can find each other. To do so, they usually ask the `./well-known/matrix/client`-config of the homeserver.
+In order to easily adjust what is served here i decided to create it myself, instead of relying on synapse to create it for me.
+
+To serve the required `well-known`-configs do the following:
+1. Add the `well-known-nginx` service to the compose.yaml that contains your synapse service (see this repos `matrix/compose.yaml`)
+1. Add the `nginx.conf`
+1. replace `<your-domain>` in the services labels and the `nginx.conf`
+
+You should now be able to `docker compose up -d well-known-nginx`. treafik should then route well-known requests for the homeserver and the syncv3 proxy to that service
+
+If you look inside the `nginx.conf` you'll see that it serves 3 "well-know" files.
+- The `/client` one is so that Element X knows where to find the syncv3-proxy, and **so that element-call knows where to find the livekit backend**
+- The `element.json`-one is so that Element X knows where to find the element-call webapp
+- I have to recheck where the `/server`-one is used, not sure about that at the moment. Could be Element X related
+
+**The Element-Call Webapp should be usable now**
+- Go to https://element-call.<your-domain>
+- Login with a user on your homeserver
+- Try starting a call
+
+# Videocall-button in Element X (App)
+you matrix-domain has to serve the correctly configured `/.well-known/element/element.json` in order for the element x app uses your self-hosted element-call website when using the video-call button
+
+# Videocall-button and Video-Rooms in the Element Webapp
+If you self-host the element-web app (see the element-web/compose.yaml for an example), you can provide a json-config-file. In there you can specify this:
+```json
+{
+  "element_call": {
+    "url": "https://element-call.<your-domain>"
+  },
+  "features": {
+    "feature_video_rooms": true,
+    "feature_group_calls": true,
+    "feature_element_call_video_rooms": true
+  }
+}
+```
+**This will make visitors who use your self-hosted element-web to directly use your self-hosted element-call instance when choosing to initiate an element-call call. It also enables
+- video-rooms + element-call-video-rooms (special rooms where the main focus is a perpetuate video call, but that also includes a text-chat)
+- group-calls (make sure you have permissions to make element-call calls in your groups)
+
+> TODO: Check if these things can somehow also be configures via well-known
+
+# Element Desktop app
+
+> TODO: Check how to make the desktop app use the self-hosted element-call instance

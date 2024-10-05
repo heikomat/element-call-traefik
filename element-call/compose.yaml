@@ -1,13 +1,14 @@
 services:
   element-call:
-    build:
-      context: ./element-call
+    image: ghcr.io/element-hq/element-call:latest
+    volumes:
+      - ./element-call-config.json:/app/config.json
     networks:
       - default
       - traefik
     labels:
       - traefik.enable=true
-      - traefik.http.routers.element-call.rule=Host(`element-call.<your-domain>`)
+      - traefik.http.routers.element-call.rule=Host(`element-call.heikomat.com`)
     restart: always
 
   livekit-jwt-service:
