@@ -13,6 +13,8 @@ Updating the service is therefore done via `git pull` + rebuild - which is exact
 
 if you already have synapse running you don't need most of what is in the `matrix` folder.
 The one interesting thing in there is the `well-known-nginx`-server. It is configured so that traffic to the well-known-urls for server and client are routed to that nginx, so we can easily change them. They are important so that the separate servers here find one another
+- the livekit-config in `/.well-known/matrix/client` is required for the element-call website to use your livekit-instance
+- the `/.well-known/element/element.json` is required so that the element x app uses your self-hosted element-call website
 
 Something similar is done with the `livekit-jwt-service` in the `element-call/compose.yaml`. Only the two routes [this service](https://github.com/element-hq/lk-jwt-service) actually provides are routed to it. The rest is routed to livekit, under the same domain (to prevent CORS issues)
 
