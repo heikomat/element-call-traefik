@@ -88,10 +88,11 @@ If you look inside the `nginx.conf` you'll see that it serves 3 "well-know" file
 - Login with a user on your homeserver
 - Try starting a call
 
-# App-Support: Videocall-button in Element X
+# App-Support
+## Videocall-button in Element X
 you matrix-domain has to serve the correctly configured `/.well-known/element/element.json` in order for the element x app uses your self-hosted element-call website when using the video-call button
 
-# App-Support: Videocall-button and Video-Rooms in the Element Webapp
+## Videocall-button and Video-Rooms in the Element Webapp
 If you self-host the element-web app (see the element-web/compose.yaml for an example), you can provide a json-config-file. In there you can specify this:
 ```json
 {
