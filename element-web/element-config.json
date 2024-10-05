@@ -11,8 +11,8 @@
     "disable_3pid_login": false,
     "brand": "Element",
     "integrations_ui_url": "",
-    "defaultCountryCode": "DE",
-    "showLabsSettings": false,
+    "default_country_code": "DE",
+    "show_labs_settings": false,
     "features": {
         "feature_new_spinner": false,
         "feature_video_rooms": true,
@@ -23,7 +23,7 @@
     "default_theme": "dark",
     "piwik": false,
     "enable_presence_by_hs_url": {},
-    "settingDefaults": {
+    "setting_defaults": {
         "breadcrumbs": true
     },
     "element_call": {
