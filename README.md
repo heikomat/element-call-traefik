@@ -114,6 +114,8 @@ If you self-host the element-web app (see the element-web/compose.yaml for an ex
 
 The desktop app just wraps element-web. for now, it seems to be impossible to
 configure the well-known in a way that tells element-desktop what element-call url to use.
-It could be that in the future, this can be configured via `/.well-known/element/element.json` just like it can be for the Element X app.
+It could be that in the future, this can be configured via `/.well-known/element/element.json` just like it can be for the Element X app..
+
+For now i suggest "[installing](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Installing#installing_pwas)" a configured, self-hosted element-web instance as PWA
 
 For more Info, see https://github.com/element-hq/element-meta/issues/2441 and https://github.com/element-hq/element-meta/issues/2441
