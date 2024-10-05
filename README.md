@@ -113,7 +113,7 @@ If you self-host the element-web app (see the element-web/compose.yaml for an ex
 - video-rooms + element-call-video-rooms (special rooms where the main focus is a perpetuate video call, but that also includes a text-chat)
 - group-calls (make sure you have permissions to make element-call calls in your groups)
 
-# Element Desktop app
+## Videocall-button and Video-Rooms in the Element Desktop app
 
 The desktop app just wraps element-web. for now, it seems to be impossible to
 configure the well-known in a way that tells element-desktop what element-call url to use.
