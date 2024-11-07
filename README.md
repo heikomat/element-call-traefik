@@ -41,17 +41,19 @@ You should now be able to `docker compose up -d element-call` and visit `element
 1. forward the following ports to your server if you have a firewall:
    - 3478 (udp, STUN)
      - skip this one if you don't want to have your STUN-traffic be unencrypted. STUN allowes clients to find each others public ip address. This is usally not considered sensitive data though.
-   - 7883 (udp, WebRTC)
+   - 7882 (udp, WebRTC)
    - 7881 (tcp, WebRTC-Fallback)
    - 50000-50255 (udp, TURN relay range)
    - 80 (tcp+udp, http)
    - 443 (tcp+udp, https+wss)
 
+_(see [the LiveKit docs](https://docs.livekit.io/home/self-hosting/ports-firewall) for more details on the used ports)_
+
 > Here is why these Ports can be forwarded (mostly) without exposing unencrypted traffic:  
 > - Port 80 goes to traefik, which just redirects http-traffic to port 443 with encryption
 > - Port 443 also goes to traefik and is encrypted (HTTPS/wss)
 > - Port 3478 is the only one actually handling unencrypted traffic (see above)
-> - 7881 and 7883 Go to livekit. They handle WebRTC-Traffic, which is as part of its spec, must be encrypted. They therfore don't need the ssl-termination through traefik
+> - 7881 and 7882 Go to livekit. They handle WebRTC-Traffic, which is as part of its spec, must be encrypted. They therfore don't need the ssl-termination through traefik
 > - Ports 50000-50255 are used to funnel traffic between clients that can't directly connect to each other, but can connect to the server. If i understand it correctly, it should only ever contain WebRTC-Traffic in this scenario, which is always encrypted. (see https://stackoverflow.com/a/23300741)
 
 You should now be able to `docker compose up -d` These services. It will not be used by element-call yet, because we have to tell element-call where to find the livekit backend. This is done later via the file served at `https://matrix.<your-domain>/.well-known/matrix/client`
