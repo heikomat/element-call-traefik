@@ -73,7 +73,7 @@ You should now be able to `docker compose up -d well-known-nginx`. treafik shoul
 If you look inside the `nginx.conf` you'll see that it serves 3 "well-know" files.
 - The `/client` one is so that Element X knows where to find the syncv3-proxy, and **so that element-call knows where to find the livekit backend**
 - The `element.json`-one is so that Element X knows where to find the element-call webapp
-- I have to recheck where the `/server`-one is used, not sure about that at the moment. Could be Element X related
+- The `/server`-one is used, to tell where to find the server when users use a diferent domain as username (ex server is on **matrix.domain.tld** and users are on **@user:domain.tld**) 
 
 **The Element-Call Webapp should be usable now**
 - Go to https://element-call.<your-domain>
