@@ -60,7 +60,7 @@ You should now be able to `docker compose up -d` These services. It will not be 
 
 # 3. Setup well-known files for Matrix/synapse
 
-Services that belong to the Element ecosystem want to know where they can find each other. To do so, they usually ask the `./well-known/matrix/client`-config of the homeserver.
+Services that belong to the Element ecosystem want to know where they can find each other. To do so, they usually ask the `/.well-known/matrix/client`-config of the homeserver.
 In order to easily adjust what is served here i decided to create it myself, instead of relying on synapse to create it for me.
 
 To serve the required `well-known`-configs do the following:
