@@ -113,7 +113,7 @@ As i only video-call with users on my homeserver, i've had no issues so far that
 
 # App-Support
 ## Videocall-button in Element X
-Since [v25.03.3](m/element-hq/element-x-android/releases/tag/v25.03.3) Element-X uses the embedded version of element-call, so no further configuration should be necessary.
+Since [v25.03.3](https://github.com/element-hq/element-x-android/releases/tag/v25.03.3) Element-X uses the embedded version of element-call, so no further configuration should be necessary.
 
 ## Videocall-button and Video-Rooms in the Element Webapp
 If you self-host the element-web app (see the element-web/compose.yaml for an example), you can provide a json-config-file. In there you can specify this:
