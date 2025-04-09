@@ -8,7 +8,7 @@ This setup looks somewhat like this:
 1. a matrix instance (synapse) on `matrix.<your-domain>`
    - It provides authorization and manages your rooms/groups
 1. a matrix-sliding-proxy on `syncv3.<your-domain>` if you want to use the Element X app 
-1. the element-call webapp on `element-call.<your-domain>`
+1. the element-call webapp on `element-call.<your-domain>` (optional since element [v1.11.97](https://github.com/element-hq/element-web/releases/tag/v1.11.97))
 1. a livekit instance on `livekit.<your-domain>`
    - livekit does the heavy lifting and is basically the videocall-backend to the element-call webapp
 
@@ -19,6 +19,15 @@ The whole setup here is split into multiple compose files. I hope this makes it 
 make sure the required subdomains (see above) point to your server
 
 # 1. Setup the Element-Call Webapp
+
+**UPDATE 2025-04**  
+This step is optional since element [v1.11.97](https://github.com/element-hq/element-web/releases/tag/v1.11.97).
+Since that version, the element-call webapp is bundled with the element webapp. See https://github.com/element-hq/element-web/pull/29309.
+
+Setting up the element-call webapp is only necessary if you want to join video-calls via a standalone webapp, without going through a client like
+element or Element-X.
+
+---
 
 1. Create a folder for the elment-call webapp to live in. In this repo this is the  `element-call` folder. If you are like me and have everything matrix related in a single folder, feel free to use that one.
 1. Go into that folder and create an `element-call-config.json`. It tells your element-call instance where to find your matrix homeserver. It could also tell element-call where to finde the livekit backend, but the prefered way to set this is the `.well-known/matrix/client`-file that we will setup later. See the example in this repo for what the element-call-config looks like (you have to replace `<your-domain>`)
@@ -70,12 +79,11 @@ To serve the required `well-known`-configs do the following:
 
 You should now be able to `docker compose up -d well-known-nginx`. treafik should then route well-known requests for the homeserver and the syncv3 proxy to that service
 
-If you look inside the `nginx.conf` you'll see that it serves 3 "well-know" files.
-- The `/client` one is so that Element X knows where to find the syncv3-proxy, and **so that element-call knows where to find the livekit backend**
-- The `element.json`-one is so that Element X knows where to find the element-call webapp
+If you look inside the `nginx.conf` you'll see that it serves 2 "well-know" files.
+- The `/client` one is so that Element knows where to find the syncv3-proxy, and **so that element-call knows where to find the livekit backend**
 - I have to recheck where the `/server`-one is used, not sure about that at the moment. Could be Element X related
 
-**The Element-Call Webapp should be usable now**
+**The standalone Element-Call Webapp should be usable now**
 - Go to https://element-call.<your-domain>
 - Login with a user on your homeserver
 - Try starting a call
@@ -83,10 +91,20 @@ If you look inside the `nginx.conf` you'll see that it serves 3 "well-know" file
 
 # 4. Configure Matrix/synapse (optional)
 
-As per the [element-call docs](https://github.com/element-hq/element-call?tab=readme-ov-file#configuration), you can add this to your synapses `homeserver.yaml`:
+As per the [element-call docs](https://github.com/element-hq/element-call/blob/livekit/docs/self-hosting.md#a-matrix-homeserver), you can add this to your synapses `homeserver.yaml`:
 ```
 experimental_features:
     msc3266_enabled: true
+    msc4222_enabled: true
+
+max_event_delay_duration: 24h
+
+rc_message:
+    per_second: 0.5
+    burst_count: 30
+rc_delayed_event_mgmt:
+    per_second: 1
+    burst_count: 20
 ```
 MSC3266 is the Room Summary API ([Proposal](https://github.com/deepbluev7/matrix-doc/blob/room-summaries/proposals/3266-room-summary.md)).
 This option is supposed to only be required for "guest access / knocking" (https://github.com/element-hq/element-call/pull/2343#issuecomment-2085260557). One user had problems with invite-links not working without this setting (https://github.com/element-hq/element-call/issues/2340).
@@ -95,15 +113,12 @@ As i only video-call with users on my homeserver, i've had no issues so far that
 
 # App-Support
 ## Videocall-button in Element X
-you matrix-domain has to serve the correctly configured `/.well-known/element/element.json` in order for the element x app uses your self-hosted element-call website when using the video-call button
+Since [v25.03.3](m/element-hq/element-x-android/releases/tag/v25.03.3) Element-X uses the embedded version of element-call, so no further configuration should be necessary.
 
 ## Videocall-button and Video-Rooms in the Element Webapp
 If you self-host the element-web app (see the element-web/compose.yaml for an example), you can provide a json-config-file. In there you can specify this:
 ```json
 {
-  "element_call": {
-    "url": "https://element-call.<your-domain>"
-  },
   "features": {
     "feature_video_rooms": true,
     "feature_group_calls": true,
@@ -111,16 +126,12 @@ If you self-host the element-web app (see the element-web/compose.yaml for an ex
   }
 }
 ```
-**This will make visitors who use your self-hosted element-web to directly use your self-hosted element-call instance when choosing to initiate an element-call call. It also enables
+This enables
 - video-rooms + element-call-video-rooms (special rooms where the main focus is a perpetuate video call, but that also includes a text-chat)
 - group-calls (make sure you have permissions to make element-call calls in your groups)
 
+> TODO: The "New video room" buttons seems to still only appear, if a user actively joins the "Video Rooms"-Beta. Is this setting here respected?
+
 ## Videocall-button and Video-Rooms in the Element Desktop app
 
-The desktop app just wraps element-web. for now, it seems to be impossible to
-configure the well-known in a way that tells element-desktop what element-call url to use.
-It could be that in the future, this can be configured via `/.well-known/element/element.json` just like it can be for the Element X app..
-
-For now i suggest "[installing](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Installing#installing_pwas)" a configured, self-hosted element-web instance as PWA
-
-For more Info, see https://github.com/element-hq/element-meta/issues/2441 and https://github.com/element-hq/element-meta/issues/2441
+The desktop app just wraps element-web. Since [v1.11.97](https://github.com/element-hq/element-web/releases/tag/v1.11.97) it bundles the element-call webapp, so it should just work.

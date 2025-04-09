@@ -1,5 +1,5 @@
 services:
-  element-call:
+  element-call: # optional if you don't need a standalone call webapp and want to use the call feature in Element and Element-X
     image: ghcr.io/element-hq/element-call:latest
     volumes:
       - ./element-call-config.json:/app/config.json
@@ -12,9 +12,9 @@ services:
     restart: always
 
   livekit-jwt-service:
-    image: ghcr.io/element-hq/lk-jwt-service:latest-ci
+    image: ghcr.io/element-hq/lk-jwt-service:latest
     environment:
-      - LK_JWT_PORT=8881
+      - LIVEKIT_JWT_PORT=8881
       - LIVEKIT_URL=wss://livekit.<your-domain>:443
       - LIVEKIT_KEY=<livekit-key>
       - LIVEKIT_SECRET=<livekit-secret>
